@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -42,14 +43,12 @@ func (b *SSEventBroker) AddEventSource(sourceNum int) {
 	eventSource := CreateSSEventSource()
 	eventSource.Start()
 	b.eventSources[sourceNum] = eventSource
-	log.Printf("Added event source: %v\n", sourceNum)
 }
 
 func (b *SSEventBroker) GetEventSource(sourceNum int) *SSEventSource {
 	b.syncObject.RLock()
 	defer b.syncObject.RUnlock()
 
-	log.Printf("Got event source: %v\n", sourceNum)
 	return b.eventSources[sourceNum]
 }
 
@@ -75,17 +74,67 @@ func (b *SSEventBroker) getMessageChannelForEventSource(eventNum int) (*SSEventS
 	return eventSource, eventSource.AddClient()
 }
 
+//func sendErrorMessage(w http.ResponseWriter)
+
 func (b *SSEventBroker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Make sure that the writer supports flushing.
+	f, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+
+	// Set the headers related to event streaming.
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	// Listen to the closing of the http connection via the CloseNotifier
+	notify := w.(http.CloseNotifier).CloseNotify()
+
 	eventNum, err := strconv.Atoi(r.URL.Path[len("/events/"):])
 	if err != nil {
 		log.Printf("Couldn't parse %s\n", r.URL.Path[len("/events/"):])
 
 		// Wrong URL parameter
+		fmt.Fprint(w, "data: ERROR\n\n")
+		f.Flush()
 		return
 	}
 
 	eventSource, messageChan := b.getMessageChannelForEventSource(eventNum)
-	if eventSource != nil {
-		eventSource.ServeHTTP(w, messageChan)
+	if eventSource == nil {
+		fmt.Fprint(w, "data: ERROR\n\n")
+		f.Flush()
+		return
 	}
+
+	go func() {
+		<-notify
+		// Remove this client from the map of attached clients
+		// when `EventHandler` exits.
+		eventSource.defunctClients <- messageChan
+		log.Println("HTTP connection just closed.")
+	}()
+
+	for {
+
+		// Read from our messageChan.
+		msg, open := <-messageChan
+
+		if !open {
+			// If our messageChan was closed, this means that the client has
+			// disconnected.
+			break
+		}
+
+		// Write to the ResponseWriter, `w`.
+		fmt.Fprintf(w, "data: Message: %s\n\n", msg)
+
+		// Flush the response.  This is only possible if
+		// the repsonse supports streaming.
+		f.Flush()
+	}
+
+	// Done.
 }

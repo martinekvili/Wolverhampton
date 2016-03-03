@@ -104,7 +104,7 @@ func main() {
 			log.Printf("Sent message %d ", i)
 			time.Sleep(5 * 1e9)
 
-			if i >= 10 {
+			if i >= 5 {
 				break
 			}
 		}

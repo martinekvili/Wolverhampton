@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
 )
 
 // SSEventSource is an event source for a server job.
@@ -105,7 +103,7 @@ func (b *SSEventSource) Start() {
 				}
 
 				log.Println("Closed event source.")
-				break
+				return
 			}
 		}
 	}()
@@ -121,50 +119,4 @@ func (b *SSEventSource) AddClient() chan string {
 	b.newClients <- messageChan
 
 	return messageChan
-}
-
-// This SSEventSource method handles and HTTP requests.
-func (b *SSEventSource) ServeHTTP(w http.ResponseWriter, messageChan chan string) {
-	// Make sure that the writer supports flushing.
-	f, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
-		return
-	}
-
-	// Listen to the closing of the http connection via the CloseNotifier
-	notify := w.(http.CloseNotifier).CloseNotify()
-	go func() {
-		<-notify
-		// Remove this client from the map of attached clients
-		// when `EventHandler` exits.
-		b.defunctClients <- messageChan
-		log.Println("HTTP connection just closed.")
-	}()
-
-	// Set the headers related to event streaming.
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-
-	for {
-
-		// Read from our messageChan.
-		msg, open := <-messageChan
-
-		if !open {
-			// If our messageChan was closed, this means that the client has
-			// disconnected.
-			break
-		}
-
-		// Write to the ResponseWriter, `w`.
-		fmt.Fprintf(w, "data: Message: %s\n\n", msg)
-
-		// Flush the response.  This is only possible if
-		// the repsonse supports streaming.
-		f.Flush()
-	}
-
-	// Done.
 }
