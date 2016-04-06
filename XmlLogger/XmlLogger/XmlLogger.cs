@@ -44,20 +44,9 @@ namespace XmlLogger
 
         public override void Shutdown()
         {
-            //using (var file = File.CreateText(@"E:\BME\onlab\build.txt"))
-            //{
-            //    file.WriteLine(success ? "Build SUCCESSFUL" : "Build FAILED");
-            //    file.WriteLine();
-
-            //    foreach (var e in errors)
-            //    {
-            //        file.WriteLine(string.Format("{0} in file {1} ({2}, {3}): {4} - {5}", e.Type, e.FileName, e.LineNumber, e.ColumnNumber, e.Code, e.Message));
-            //    }   
-            //}
-
             var dcs = new DataContractSerializer(typeof(BuildResult));
             var settings = new XmlWriterSettings{ Indent = true };
-            using (var writer = XmlWriter.Create(@"E:\BME\onlab\build.xml", settings))
+            using (var writer = XmlWriter.Create(@"buildresult.xml", settings))
             {
                 writer.WriteStartDocument();
                 dcs.WriteObject(writer, result);

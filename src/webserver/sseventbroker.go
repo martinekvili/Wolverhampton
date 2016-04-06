@@ -74,6 +74,15 @@ func (b *SSEventBroker) getMessageChannelForEventSource(eventNum int) (*SSEventS
 	return eventSource, eventSource.AddClient()
 }
 
+func (b *SSEventBroker) BroadCastEvent(event string) {
+	b.syncObject.RLock()
+	defer b.syncObject.RUnlock()
+
+	for _, eventSource := range b.eventSources {
+		eventSource.messages <- event
+	}
+}
+
 //func sendErrorMessage(w http.ResponseWriter)
 
 func (b *SSEventBroker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
