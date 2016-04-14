@@ -1,12 +1,28 @@
 package main
 
 import (
+	"log"
+	"net"
 	"net/http"
+	"net/rpc"
 )
 
 // Main routine
 //
 func main() {
+	// Set up the RPC callback interface
+	go func() {
+		callbackContract := new(CallbackContract)
+		rpc.Register(callbackContract)
+		rpc.HandleHTTP()
+
+		l, e := net.Listen("tcp", ":1235")
+		if e != nil {
+			log.Printf("Error while trying to listen on tcp: %v\n", e)
+		}
+		http.Serve(l, nil)
+	}()
+
 	// Make a new Broker instance
 	eventBroker := GetSSEventBrokerInstance()
 

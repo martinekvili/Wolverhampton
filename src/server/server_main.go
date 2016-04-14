@@ -8,6 +8,9 @@ import (
 )
 
 func main() {
+	jobQueue := GetJobQueueInstance()
+	jobQueue.Start()
+
 	serviceContract := new(ServiceContract)
 	rpc.Register(serviceContract)
 	rpc.HandleHTTP()
