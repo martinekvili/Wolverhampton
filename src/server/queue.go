@@ -1,5 +1,10 @@
 package main
 
+import (
+	"datacontract"
+	"net/rpc"
+)
+
 type Queue struct {
 	queue []int
 
@@ -17,8 +22,8 @@ func CreateQueue() *Queue {
 	}
 }
 
-func (q *Queue) Start() {
-	go func() {
+func (q *Queue) Start(client *rpc.Client) {
+	go func(client *rpc.Client) {
 		for {
 			if len(q.queue) > 0 {
 				select {
@@ -29,6 +34,14 @@ func (q *Queue) Start() {
 
 				case q.getItem <- q.queue[0]:
 					q.queue = q.queue[1:]
+					for ix, item := range q.queue {
+						args := &datacontract.JobStatusArgs{
+							JobID:       item,
+							JobNumInRow: ix + 1,
+						}
+						var reply datacontract.EmptyArgs
+						client.Call("CallbackContract.JobStatus", args, &reply)
+					}
 				}
 			} else {
 				select {
@@ -39,5 +52,5 @@ func (q *Queue) Start() {
 				}
 			}
 		}
-	}()
+	}(client)
 }

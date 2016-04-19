@@ -20,8 +20,15 @@ func (c *CallbackContract) CloseJob(args *datacontract.CloseJobArgs, resp *datac
 }
 
 func (c *CallbackContract) JobStatus(args *datacontract.JobStatusArgs, resp *datacontract.EmptyArgs) error {
+	var msg string
+
+	if args.JobNumInRow == 0 {
+		msg = fmt.Sprint("The job has started.")
+	} else {
+		msg = fmt.Sprintf("The job is %v. in line.", args.JobNumInRow)
+	}
 	eventBroker := GetSSEventBrokerInstance()
-	eventBroker.GetEventSource(args.JobID).messages <- fmt.Sprintf("The job is %v. in line.", args.JobNumInRow+1)
+	eventBroker.GetEventSource(args.JobID).messages <- msg
 	return nil
 }
 

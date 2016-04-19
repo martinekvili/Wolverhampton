@@ -7,19 +7,32 @@ import (
 	"sync"
 )
 
+func when(expression bool, channel chan int) chan int {
+	if expression {
+		return channel
+	}
+
+	return nil
+}
+
 var instance *JobQueue
 var once sync.Once
 
 type JobQueue struct {
 	addItem  chan int
 	jobQueue *Queue
+
+	workInProgress bool
+	doneWork       chan bool
 }
 
 func GetJobQueueInstance() *JobQueue {
 	once.Do(func() {
 		instance = &JobQueue{
-			addItem:  make(chan int),
-			jobQueue: CreateQueue(),
+			addItem:        make(chan int),
+			jobQueue:       CreateQueue(),
+			workInProgress: false,
+			doneWork:       make(chan bool),
 		}
 	})
 
@@ -28,31 +41,39 @@ func GetJobQueueInstance() *JobQueue {
 
 func (jq *JobQueue) Start() {
 	go func() {
-		jq.jobQueue.Start()
-
 		client, err := rpc.DialHTTP("tcp", "localhost:1235")
 		if err != nil {
 			log.Printf("Error happened while dialing: %v\n", err)
 			return
 		}
 
+		jq.jobQueue.Start(client)
+
 		for {
 			select {
 			case item := <-jq.addItem:
 				args := &datacontract.JobStatusArgs{
 					JobID:       item,
-					JobNumInRow: <-jq.jobQueue.getSize,
+					JobNumInRow: <-jq.jobQueue.getSize + 1,
 				}
 				var reply datacontract.EmptyArgs
 				client.Call("CallbackContract.JobStatus", args, &reply)
 
 				jq.jobQueue.addItem <- item
 
-			case item := <-jq.jobQueue.getItem:
-				var args, reply datacontract.EmptyArgs
-				client.Call("CallbackContract.NextJobStarted", args, &reply)
+			case <-jq.doneWork:
+				jq.workInProgress = false
 
-				HandleJob(item)
+			case item := <-when(!jq.workInProgress, jq.jobQueue.getItem):
+				args := &datacontract.JobStatusArgs{
+					JobID:       item,
+					JobNumInRow: 0,
+				}
+				var reply datacontract.EmptyArgs
+				client.Call("CallbackContract.JobStatus", args, &reply)
+
+				jq.workInProgress = true
+				go HandleJob(item, jq.doneWork)
 			}
 		}
 	}()

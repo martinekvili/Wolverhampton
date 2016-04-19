@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func HandleJob(jobID int) {
+func HandleJob(jobID int, doneWork chan bool) {
 	cmd := exec.Command("C:\\Program Files (x86)\\MSBuild\\12.0\\Bin\\amd64\\MSBuild.exe",
 		"/noconsolelogger",
 		"/logger:E:\\GitHub\\Wolverhampton\\XmlLogger\\XmlLogger\\bin\\Debug\\XmlLogger.dll",
@@ -58,4 +58,6 @@ func HandleJob(jobID int) {
 		JobID: jobID,
 	}
 	err = client.Call("CallbackContract.CloseJob", closeArgs, &reply)
+
+	doneWork <- true
 }

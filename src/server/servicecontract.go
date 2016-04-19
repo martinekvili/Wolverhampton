@@ -12,7 +12,7 @@ import (
 	// "time"
 )
 
-var cntr int32 = 1
+var cntr int32 = 0
 
 type ServiceContract bool
 
