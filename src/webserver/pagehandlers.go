@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 )
 
@@ -58,7 +60,7 @@ func SubmitPageHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer file.Close()
 
-		f, err := os.Create("uploads/" + handler.Filename)
+		f, err := os.Create(path.Join("uploads", strconv.Itoa(jobID)+filepath.Ext(handler.Filename)))
 		if err != nil {
 			fmt.Println(err)
 			return
