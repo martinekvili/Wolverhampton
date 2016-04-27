@@ -13,17 +13,20 @@ SandBoxRunner::SandBoxRunner(int memorySizeinMB, int maxTimeInSec) : jobObject{ 
 	}
 }
 
-SandBoxRunner::RunResult SandBoxRunner::runProcessWithName(const char *processNameAnsi) {
+SandBoxRunner::RunResult SandBoxRunner::runProcessWithName(const char *processNameAnsi, const char *outFileNameAnsi) {
 	Process process{ processNameAnsi };
+	File outFile{ outFileNameAnsi };
 
 	if (!AssignProcessToJobObject(jobObject.getJobHandle(), process.getProcessHandle())) {
 		throw createException("Assigning Process to Job failed", GetLastError());
 	}
 
-	ResumeThread(process.getThreadHanlde());
+	ResumeThread(process.getThreadHandle());
 
 	// Wait until child process exits.
-	WaitForSingleObject(process.getProcessHandle(), INFINITE);
+	while (WaitForSingleObject(process.getProcessHandle(), 100) == WAIT_TIMEOUT) {
+		process.writeStdOutToFile(outFile);
+	}
 
 	DWORD CompletionCode;
 	ULONG_PTR CompletionKey;
@@ -41,7 +44,8 @@ SandBoxRunner::RunResult SandBoxRunner::runProcessWithName(const char *processNa
 		return NotEnoughMemory;
 
 	case JOB_OBJECT_MSG_EXIT_PROCESS:
-		return Success;
+		process.writeStdOutToFile(outFile);
+		return Success;	
 
 	default:
 		return Unknown;

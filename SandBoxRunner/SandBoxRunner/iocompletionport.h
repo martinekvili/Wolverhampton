@@ -1,5 +1,5 @@
-#ifndef IOCOMPLETIONPORT
-#define IOCOMPLETIONPORT
+#ifndef IOCOMPLETIONPORT_H
+#define IOCOMPLETIONPORT_H
 
 #include <Windows.h>
 

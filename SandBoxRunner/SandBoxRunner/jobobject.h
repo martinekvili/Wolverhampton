@@ -1,5 +1,5 @@
-#ifndef JOBOBJECT
-#define JOBOBJECT
+#ifndef JOBOBJECT_H
+#define JOBOBJECT_H
 
 #include <stdexcept>
 #include <Windows.h>

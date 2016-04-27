@@ -78,17 +78,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="file.cpp" />
     <ClCompile Include="iocompletionport.cpp" />
     <ClCompile Include="jobobject.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="pipe.cpp" />
     <ClCompile Include="process.cpp" />
     <ClCompile Include="sandboxrunner.cpp" />
     <ClCompile Include="unicodestring.cpp" />
     <ClCompile Include="utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="file.h" />
     <ClInclude Include="iocompletionport.h" />
     <ClInclude Include="jobobject.h" />
+    <ClInclude Include="pipe.h" />
     <ClInclude Include="process.h" />
     <ClInclude Include="sandboxrunner.h" />
     <ClInclude Include="unicodestring.h" />

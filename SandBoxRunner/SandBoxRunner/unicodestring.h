@@ -1,5 +1,5 @@
-#ifndef UNICODESTRING
-#define UNICODESTRING
+#ifndef UNICODESTRING_H
+#define UNICODESTRING_H
 
 #include <Windows.h>
 

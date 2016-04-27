@@ -1,5 +1,5 @@
-#ifndef SANDBOXRUNNER
-#define SANDBOXRUNNER
+#ifndef SANDBOXRUNNER_H
+#define SANDBOXRUNNER_H
 
 #include "jobobject.h"
 #include "iocompletionport.h"
@@ -23,7 +23,7 @@ public:
 
 	SandBoxRunner(int memorySizeinMB, int maxTimeInSec);
 
-	RunResult runProcessWithName(const char *processNameAnsi);
+	RunResult runProcessWithName(const char *processNameAnsi, const char *outFileNameAnsi);
 };
 
 #endif

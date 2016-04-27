@@ -1,5 +1,5 @@
-#ifndef UTILITY
-#define UTILITY
+#ifndef UTILITY_H
+#define UTILITY_H
 
 #include <sstream>
 #include <stdexcept>

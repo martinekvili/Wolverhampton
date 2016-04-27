@@ -8,8 +8,8 @@ int main(int argc, char** argv) {
 	_set_abort_behavior(0, _WRITE_ABORT_MSG);
 
 	try {
-		if (argc != 4) {
-			std::cout << "Usage: " << argv[0] << " [memSizeInMB] [timeInSec] [executable]" << std::endl;
+		if (argc != 5) {
+			std::cout << "Usage: " << argv[0] << " [memSizeInMB] [timeInSec] [executable] [outFile]" << std::endl;
 			return 1;
 		}
 
@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 		int time = atoi(argv[2]);
 		SandBoxRunner sandBoxRunner{ memSize, time };
 
-		auto result = sandBoxRunner.runProcessWithName(argv[3]);
+		auto result = sandBoxRunner.runProcessWithName(argv[3], argv[4]);
 
 		std::cout << std::endl;
 		std::cout << "RESULT: ";
