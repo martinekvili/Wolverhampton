@@ -11,17 +11,22 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 )
 
-func HandleJob(jobID int, doneWork chan bool) {
-	jobStoragePath := path.Join("JobStorage", strconv.Itoa(jobID))
+func createDirectoryForJob(jobID int) (jobStoragePath string, solutionPath string) {
+	jobStoragePath = path.Join("JobStorage", strconv.Itoa(jobID))
 	os.MkdirAll(jobStoragePath, os.ModeDir)
 
 	ExtractZipIntoFolder(path.Join("projects", "TestSolution.zip"), jobStoragePath)
-	solutionPath := path.Join(jobStoragePath, "TestSolution")
+	solutionPath = path.Join(jobStoragePath, "TestSolution")
 	CopyFile(path.Join("uploads", strconv.Itoa(jobID)+".cs"), path.Join(solutionPath, "TestSolution", "ClassToBeWritten.cs"))
 
+	return
+}
+
+func buildProject(jobID int, solutionPath string, client *rpc.Client) error {
 	cmd := exec.Command("C:\\Program Files (x86)\\MSBuild\\12.0\\Bin\\amd64\\MSBuild.exe",
 		"/noconsolelogger",
 		"/logger:E:\\GitHub\\Wolverhampton\\XmlLogger\\XmlLogger\\bin\\Debug\\XmlLogger.dll",
@@ -38,7 +43,7 @@ func HandleJob(jobID int, doneWork chan bool) {
 	if err != nil {
 		errorMsg := "There was an error with the compilation."
 		log.Println(errorMsg)
-		return
+		return err
 	}
 
 	var v BuildResult
@@ -46,13 +51,7 @@ func HandleJob(jobID int, doneWork chan bool) {
 	if err != nil {
 		errorMsg := fmt.Sprintf("Error happened during unmarshalling xml: %v", err)
 		log.Println(errorMsg)
-		return
-	}
-
-	client, err := rpc.DialHTTP("tcp", "localhost:1235")
-	if err != nil {
-		log.Printf("Error happened while dialing: %v\n", err)
-		return
+		return err
 	}
 
 	buildArgs := &datacontract.BuildResultArgs{
@@ -60,14 +59,84 @@ func HandleJob(jobID int, doneWork chan bool) {
 		BuildResult: v.Successful,
 	}
 	var reply datacontract.EmptyArgs
-	err = client.Call("CallbackContract.SendBuildResult", buildArgs, &reply)
+	client.Call("CallbackContract.SendBuildResult", buildArgs, &reply)
 
-	time.Sleep(time.Second * 10)
+	return nil
+}
 
+func runProject(jobID int, solutionPath string, client *rpc.Client) error {
+	cmd := exec.Command("E:\\GitHub\\Wolverhampton\\SandBoxRunner\\Debug\\SandboxRunner.exe",
+		"5",
+		"5",
+		"TestSolution\\bin\\Debug\\TestSolution.exe",
+		"runresult.txt")
+	cmd.Dir = solutionPath
+
+	outputBytes, err := cmd.Output()
+	if err != nil {
+		log.Printf("Error happened during running the executable: %v\n", err)
+		return err
+	}
+
+	output := string(outputBytes)
+	log.Printf("Run result is: %v\n", output)
+
+	var runResult datacontract.RunResult
+	switch {
+	case strings.Contains(output, "SUCCESS"):
+		runResult = datacontract.Success
+
+	case strings.Contains(output, "NOT_ENOUGH_MEMORY"):
+		runResult = datacontract.NotEnoughMemory
+
+	case strings.Contains(output, "NOT_ENOUGH_TIME"):
+		runResult = datacontract.NotEnoughTime
+
+	case strings.Contains(output, "UNKNOWN_ERROR"):
+		runResult = datacontract.Unknown
+	}
+
+	runResultArgs := &datacontract.RunResultArgs{
+		JobID:  jobID,
+		Result: runResult,
+	}
+	var reply datacontract.EmptyArgs
+	client.Call("CallbackContract.SendRunResult", runResultArgs, &reply)
+
+	return nil
+}
+
+func closeJob(jobID int, client *rpc.Client) {
 	closeArgs := &datacontract.CloseJobArgs{
 		JobID: jobID,
 	}
-	err = client.Call("CallbackContract.CloseJob", closeArgs, &reply)
+	var reply datacontract.EmptyArgs
+	client.Call("CallbackContract.CloseJob", closeArgs, &reply)
+}
+
+func HandleJob(jobID int, doneWork chan bool) {
+	/*jobStoragePath*/ _, solutionPath := createDirectoryForJob(jobID)
+	//defer os.RemoveAll(jobStoragePath)
+
+	client, err := rpc.DialHTTP("tcp", "localhost:1235")
+	if err != nil {
+		log.Printf("Error happened while dialing: %v\n", err)
+		return
+	}
+
+	err = buildProject(jobID, solutionPath, client)
+	if err != nil {
+		return
+	}
+
+	err = runProject(jobID, solutionPath, client)
+	if err != nil {
+		return
+	}
+
+	time.Sleep(time.Second * 10)
+
+	closeJob(jobID, client)
 
 	doneWork <- true
 }

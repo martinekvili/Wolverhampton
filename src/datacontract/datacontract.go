@@ -21,3 +21,17 @@ type JobStatusArgs struct {
 	JobID       int
 	JobNumInRow int
 }
+
+type RunResult int
+
+const (
+	Success RunResult = iota
+	NotEnoughMemory
+	NotEnoughTime
+	Unknown
+)
+
+type RunResultArgs struct {
+	JobID  int
+	Result RunResult
+}

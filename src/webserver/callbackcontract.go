@@ -7,6 +7,28 @@ import (
 
 type CallbackContract bool
 
+func (c *CallbackContract) SendRunResult(args *datacontract.RunResultArgs, resp *datacontract.EmptyArgs) error {
+	eventBroker := GetSSEventBrokerInstance()
+
+	var message string
+	switch args.Result {
+	case datacontract.Success:
+		message = "The run succeeded."
+
+	case datacontract.NotEnoughMemory:
+		message = "The run was terminated because it tried to use more memory than permitted."
+
+	case datacontract.NotEnoughTime:
+		message = "The run was terminated because it tried to run for more time than permitted."
+
+	case datacontract.Unknown:
+		message = "The run was terminated due to unknown reasons."
+	}
+
+	eventBroker.GetEventSource(args.JobID).messages <- message
+	return nil
+}
+
 func (c *CallbackContract) SendBuildResult(args *datacontract.BuildResultArgs, resp *datacontract.EmptyArgs) error {
 	eventBroker := GetSSEventBrokerInstance()
 	eventBroker.GetEventSource(args.JobID).messages <- fmt.Sprintf("The build succeeded: %v", args.BuildResult)
