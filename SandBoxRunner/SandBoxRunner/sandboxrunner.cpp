@@ -1,7 +1,7 @@
 #include "sandboxrunner.h"
 
 SandBoxRunner::SandBoxRunner(int memorySizeinMB, int maxTimeInSec) : jobObject{ "SandBoxJob" } {
-	jobObject.setLimitInformation(memorySizeinMB, maxTimeInSec);
+	maxTime = jobObject.setLimitInformation(memorySizeinMB, maxTimeInSec);
 
 	JOBOBJECT_ASSOCIATE_COMPLETION_PORT Port;
 	Port.CompletionKey = jobObject.getJobHandle();
@@ -11,6 +11,27 @@ SandBoxRunner::SandBoxRunner(int memorySizeinMB, int maxTimeInSec) : jobObject{ 
 	{
 		throw createException("Could not associate job with IO completion port", GetLastError());
 	}
+}
+
+bool SandBoxRunner::hasMoreTimeToRun(const Process& process) {
+	FILETIME ftCreationTime;
+	FILETIME ftExitTime;
+	FILETIME ftKernelTime;
+	FILETIME ftUserTime;
+
+	if (!GetProcessTimes(process.getProcessHandle(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime)) {
+		throw createException("Could not get information about the running process", GetLastError());
+	}
+
+	SYSTEMTIME stSystemTime;
+	GetSystemTime(&stSystemTime);
+	FILETIME ftSystemTime;
+	SystemTimeToFileTime(&stSystemTime, &ftSystemTime);
+
+	ULARGE_INTEGER creationTime = fileTimeToLargeInteger(ftCreationTime);
+	ULARGE_INTEGER systemTime = fileTimeToLargeInteger(ftSystemTime);
+
+	return (systemTime.QuadPart - creationTime.QuadPart < maxTime.QuadPart);
 }
 
 SandBoxRunner::RunResult SandBoxRunner::runProcessWithName(const char *processNameAnsi, const char *outFileNameAnsi) {
@@ -25,6 +46,10 @@ SandBoxRunner::RunResult SandBoxRunner::runProcessWithName(const char *processNa
 
 	// Wait until child process exits.
 	while (WaitForSingleObject(process.getProcessHandle(), 100) == WAIT_TIMEOUT) {
+		if (!hasMoreTimeToRun(process)) {
+			return NotEnoughTime;
+		}
+
 		process.writeStdOutToFile(outFile);
 	}
 

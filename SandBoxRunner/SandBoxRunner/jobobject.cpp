@@ -14,7 +14,7 @@ JobObject::~JobObject() {
 	CloseHandle(jobHandle);
 }
 
-void JobObject::setLimitInformation(int memorySizeinMB, int maxTimeInSec) {
+LARGE_INTEGER JobObject::setLimitInformation(int memorySizeinMB, int maxTimeInSec) {
 	JOBOBJECT_BASIC_LIMIT_INFORMATION jobBasicLimitInfo;
 
 	LARGE_INTEGER maxTime;
@@ -30,4 +30,6 @@ void JobObject::setLimitInformation(int memorySizeinMB, int maxTimeInSec) {
 	if (!SetInformationJobObject(jobHandle, JobObjectExtendedLimitInformation, &jobLimitInfo, sizeof(jobLimitInfo))) {
 		throw createException("Setting limit information failed", GetLastError());
 	}
+
+	return maxTime;
 }

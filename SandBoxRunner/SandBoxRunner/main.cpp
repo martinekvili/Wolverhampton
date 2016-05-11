@@ -23,19 +23,19 @@ int main(int argc, char** argv) {
 		std::cout << "RESULT: ";
 		switch (result) {
 		case SandBoxRunner::NotEnoughMemory:
-			std::cout << "The process needed more memory than the given memory limit, which is " << memSize << " MB." << std::endl;
+			std::cout << "NOT_ENOUGH_MEMORY" << std::endl;
 			break;
 
 		case SandBoxRunner::NotEnoughTime:
-			std::cout << "The process has not finished in the given time window, which is " << time << " sec." << std::endl;
+			std::cout << "NOT_ENOUGH_TIME" << std::endl;
 			break;
 
 		case SandBoxRunner::Success:
-			std::cout << "The process finished without any error." << std::endl;
+			std::cout << "SUCCESS" << std::endl;
 			break;
 
 		case SandBoxRunner::Unknown:
-			std::cout << "The process encountered an unknown error." << std::endl;
+			std::cout << "UNKNOWN_ERROR" << std::endl;
 			break;
 		}
 	}

@@ -13,7 +13,7 @@ public:
 	UnicodeString(const char *ansiString);
 	~UnicodeString();
 
-	BSTR getUnicodeString() {
+	BSTR getUnicodeString() const {
 		return unicodeString;
 	}
 	

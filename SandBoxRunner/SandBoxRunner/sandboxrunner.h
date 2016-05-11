@@ -7,8 +7,12 @@
 #include <iostream>
 
 class SandBoxRunner {
+	LARGE_INTEGER maxTime;
+
 	JobObject jobObject;
 	IOCompletionPort ioCompletionPort;
+
+	bool hasMoreTimeToRun(const Process& process);
 
 public:
 	enum RunResult {

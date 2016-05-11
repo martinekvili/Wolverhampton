@@ -49,12 +49,12 @@ void Process::writeStdOutToFile(const File& file) {
 	BOOL bSuccess = FALSE;
 
 	while (true) {
-		PeekNamedPipe(pipe.getPipeReadHanlde(), NULL, 0, NULL, &dwRead, NULL);
+		PeekNamedPipe(pipe.getPipeReadHandle(), NULL, 0, NULL, &dwRead, NULL);
 		if (dwRead == 0) {
 			break;
 		}
 
-		bSuccess = ReadFile(pipe.getPipeReadHanlde(), chBuf, bufferSize, &dwRead, NULL);
+		bSuccess = ReadFile(pipe.getPipeReadHandle(), chBuf, bufferSize, &dwRead, NULL);
 		if (!bSuccess || dwRead == 0) {
 			break;
 		}

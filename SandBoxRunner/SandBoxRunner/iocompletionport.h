@@ -15,7 +15,7 @@ public:
 	IOCompletionPort();
 	~IOCompletionPort();
 
-	HANDLE getIOCompletionPortHandle() {
+	HANDLE getIOCompletionPortHandle() const {
 		return ioCompletionPortHandle;
 	}
 };

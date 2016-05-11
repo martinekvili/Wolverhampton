@@ -25,11 +25,11 @@ public:
 
 	void writeStdOutToFile(const File& file);
 
-	HANDLE getProcessHandle() {
+	HANDLE getProcessHandle() const {
 		return processHandle;
 	}
 
-	HANDLE getThreadHandle() {
+	HANDLE getThreadHandle() const {
 		return threadHandle;
 	}
 };

@@ -18,9 +18,9 @@ public:
 	JobObject(const char *jobNameAnsi);
 	~JobObject();
 
-	void setLimitInformation(int memorySizeinMB, int maxTimeInSec);
+	LARGE_INTEGER setLimitInformation(int memorySizeinMB, int maxTimeInSec);
 
-	HANDLE getJobHandle() {
+	HANDLE getJobHandle() const {
 		return jobHandle;
 	}
 };

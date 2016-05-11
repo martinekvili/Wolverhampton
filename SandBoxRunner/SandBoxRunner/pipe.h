@@ -22,11 +22,11 @@ public:
 
 	void freeWriteHandle();
 
-	HANDLE getPipeReadHanlde() {
+	HANDLE getPipeReadHandle() const {
 		return pipeReadHandle;
 	}
 
-	HANDLE getPipeWriteHandle() {
+	HANDLE getPipeWriteHandle() const {
 		return pipeWriteHandle;
 	}
 };

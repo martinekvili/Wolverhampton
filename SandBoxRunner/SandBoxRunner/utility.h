@@ -7,4 +7,6 @@
 
 std::runtime_error createException(const char *errorPlace, DWORD errorNum);
 
+ULARGE_INTEGER fileTimeToLargeInteger(FILETIME fileTime);
+
 #endif
