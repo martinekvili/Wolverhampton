@@ -47,6 +47,7 @@ SandBoxRunner::RunResult SandBoxRunner::runProcessWithName(const char *processNa
 	// Wait until child process exits.
 	while (WaitForSingleObject(process.getProcessHandle(), 100) == WAIT_TIMEOUT) {
 		if (!hasMoreTimeToRun(process)) {
+			TerminateJobObject(jobObject.getJobHandle(), 1);
 			return NotEnoughTime;
 		}
 
