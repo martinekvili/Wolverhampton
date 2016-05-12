@@ -39,7 +39,9 @@ func (c *CallbackContract) SendRunResult(args *datacontract.RunResultArgs, resp 
 
 func (c *CallbackContract) SendBuildResult(args *datacontract.BuildResultArgs, resp *datacontract.EmptyArgs) error {
 	eventBroker := GetSSEventBrokerInstance()
-	eventBroker.GetEventSource(args.JobID).messages <- fmt.Sprintf("The build succeeded: %v", args.BuildResult)
+
+	eventBroker.GetEventSource(args.JobID).messages <- fmt.Sprintf("The build succeeded: %v", args.Result.Successful)
+
 	return nil
 }
 

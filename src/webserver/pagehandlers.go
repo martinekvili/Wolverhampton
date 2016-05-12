@@ -112,7 +112,23 @@ func TestPageHandler(w http.ResponseWriter, r *http.Request) {
 		p.EventSourceNum = sourceNum
 		t.Execute(w, p)
 	} else {
-		fmt.Fprintf(w, "<html><body>It'll be read from database</body></html>")
+		client, err := rpc.DialHTTP("tcp", "localhost:1234")
+		if err != nil {
+			log.Printf("Error happened while dialing: %v\n", err)
+			return
+		}
+
+		getJobResultArgs := &datacontract.GetJobResultArgs{
+			JobID: sourceNum,
+		}
+		var jobResult datacontract.JobResult
+		err = client.Call("ServiceContract.GetJobResult", getJobResultArgs, &jobResult)
+		if err != nil {
+			log.Printf("Error happened during remote procedure call: %v\n", err)
+			return
+		}
+
+		fmt.Fprintf(w, "<html><body>The build was %v ly succesful.</body></html>", jobResult.BuildInfo.Successful)
 	}
 
 	// Done.

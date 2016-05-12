@@ -4,8 +4,8 @@ package datacontract
 type EmptyArgs bool
 
 type BuildResultArgs struct {
-	JobID       int
-	BuildResult bool
+	JobID  int
+	Result BuildResult
 }
 
 type CloseJobArgs struct {
@@ -45,4 +45,32 @@ type OutputMismatchLine struct {
 type OutputMatchResultArgs struct {
 	JobID      int
 	Mismatches []OutputMismatchLine
+}
+
+type Error struct {
+	Type string `xml:"type"`
+
+	FileName     string `xml:"filename"`
+	LineNumber   int    `xml:"linenumber"`
+	ColumnNumber int    `xml:"columnnumber"`
+
+	Code    string `xml:"code"`
+	Message string `xml:"message"`
+}
+
+type BuildResult struct {
+	Successful bool `xml:"successful"`
+
+	ErrorList []Error `xml:"errorlist>error"`
+}
+
+type JobResult struct {
+	JobID       int
+	BuildInfo   BuildResult
+	RunInfo     RunResult
+	CompareInfo []OutputMismatchLine
+}
+
+type GetJobResultArgs struct {
+	JobID int
 }

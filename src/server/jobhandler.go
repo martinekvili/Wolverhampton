@@ -5,6 +5,7 @@ import (
 	"datacontract"
 	"encoding/xml"
 	"fmt"
+	"gopkg.in/mgo.v2"
 	"io/ioutil"
 	"log"
 	"net/rpc"
@@ -26,7 +27,7 @@ func createDirectoryForJob(jobID int) (jobStoragePath string, solutionPath strin
 	return
 }
 
-func buildProject(jobID int, solutionPath string, client *rpc.Client) error {
+func buildProject(jobID int, solutionPath string, jobResult *datacontract.JobResult, client *rpc.Client) error {
 	cmd := exec.Command("C:\\Program Files (x86)\\MSBuild\\12.0\\Bin\\amd64\\MSBuild.exe",
 		"/noconsolelogger",
 		"/logger:E:\\GitHub\\Wolverhampton\\XmlLogger\\XmlLogger\\bin\\Debug\\XmlLogger.dll",
@@ -46,17 +47,19 @@ func buildProject(jobID int, solutionPath string, client *rpc.Client) error {
 		return err
 	}
 
-	var v BuildResult
-	err = xml.Unmarshal(bytes, &v)
+	var result datacontract.BuildResult
+	err = xml.Unmarshal(bytes, &result)
 	if err != nil {
 		errorMsg := fmt.Sprintf("Error happened during unmarshalling xml: %v", err)
 		log.Println(errorMsg)
 		return err
 	}
 
+	jobResult.BuildInfo = result
+
 	buildArgs := &datacontract.BuildResultArgs{
-		JobID:       jobID,
-		BuildResult: v.Successful,
+		JobID:  jobID,
+		Result: result,
 	}
 	var reply datacontract.EmptyArgs
 	client.Call("CallbackContract.SendBuildResult", buildArgs, &reply)
@@ -64,7 +67,7 @@ func buildProject(jobID int, solutionPath string, client *rpc.Client) error {
 	return nil
 }
 
-func runProject(jobID int, solutionPath string, client *rpc.Client) (datacontract.RunResult, error) {
+func runProject(jobID int, solutionPath string, jobResult *datacontract.JobResult, client *rpc.Client) (datacontract.RunResult, error) {
 	cmd := exec.Command("E:\\GitHub\\Wolverhampton\\SandBoxRunner\\Debug\\SandboxRunner.exe",
 		"10",
 		"5",
@@ -96,6 +99,8 @@ func runProject(jobID int, solutionPath string, client *rpc.Client) (datacontrac
 		runResult = datacontract.Unknown
 	}
 
+	jobResult.RunInfo = runResult
+
 	runResultArgs := &datacontract.RunResultArgs{
 		JobID:  jobID,
 		Result: runResult,
@@ -106,7 +111,7 @@ func runProject(jobID int, solutionPath string, client *rpc.Client) (datacontrac
 	return runResult, nil
 }
 
-func matchOutput(jobID int, solutionPath string, client *rpc.Client) error {
+func matchOutput(jobID int, solutionPath string, jobResult *datacontract.JobResult, client *rpc.Client) error {
 	expectedOutput, err := os.Open(path.Join(solutionPath, "output_expected.txt"))
 	if err != nil {
 		log.Printf("Error happened during opening expected output file: %v\n", err)
@@ -175,6 +180,8 @@ func matchOutput(jobID int, solutionPath string, client *rpc.Client) error {
 		lineNum++
 	}
 
+	jobResult.CompareInfo = resultArgs.Mismatches
+
 	var reply datacontract.EmptyArgs
 	client.Call("CallbackContract.SendOutputMatchResult", resultArgs, &reply)
 
@@ -192,8 +199,33 @@ func closeJob(jobID int, client *rpc.Client) {
 func HandleJob(jobID int, doneWork chan bool) {
 	defer func() { doneWork <- true }()
 
-	/*jobStoragePath*/ _, solutionPath := createDirectoryForJob(jobID)
-	//defer os.RemoveAll(jobStoragePath)
+	jobResult := &datacontract.JobResult{
+		JobID: jobID,
+		BuildInfo: datacontract.BuildResult{
+			Successful: false,
+			ErrorList:  make([]datacontract.Error, 0),
+		},
+		RunInfo:     datacontract.Unknown,
+		CompareInfo: make([]datacontract.OutputMismatchLine, 0),
+	}
+
+	defer func() {
+		session, err := mgo.Dial("localhost")
+		if err != nil {
+			log.Printf("Couldn't access database: %v\n", err)
+		}
+
+		c := session.DB("WolverhamptonDB").C("JobResult")
+		err = c.Insert(jobResult)
+		if err != nil {
+			log.Printf("Couldn't insert job result: %v\n", err)
+		}
+
+		session.Close()
+	}()
+
+	jobStoragePath, solutionPath := createDirectoryForJob(jobID)
+	defer os.RemoveAll(jobStoragePath)
 
 	client, err := rpc.DialHTTP("tcp", "localhost:1235")
 	if err != nil {
@@ -202,15 +234,15 @@ func HandleJob(jobID int, doneWork chan bool) {
 	}
 	defer closeJob(jobID, client)
 
-	err = buildProject(jobID, solutionPath, client)
+	err = buildProject(jobID, solutionPath, jobResult, client)
 	if err != nil {
 		return
 	}
 
-	runResult, err := runProject(jobID, solutionPath, client)
+	runResult, err := runProject(jobID, solutionPath, jobResult, client)
 	if err != nil || runResult != datacontract.Success {
 		return
 	}
 
-	matchOutput(jobID, solutionPath, client)
+	matchOutput(jobID, solutionPath, jobResult, client)
 }
