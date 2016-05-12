@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"datacontract"
 	"encoding/xml"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func createDirectoryForJob(jobID int) (jobStoragePath string, solutionPath string) {
@@ -64,18 +64,18 @@ func buildProject(jobID int, solutionPath string, client *rpc.Client) error {
 	return nil
 }
 
-func runProject(jobID int, solutionPath string, client *rpc.Client) error {
+func runProject(jobID int, solutionPath string, client *rpc.Client) (datacontract.RunResult, error) {
 	cmd := exec.Command("E:\\GitHub\\Wolverhampton\\SandBoxRunner\\Debug\\SandboxRunner.exe",
-		"5",
+		"10",
 		"5",
 		"TestSolution\\bin\\Debug\\TestSolution.exe",
-		"runresult.txt")
+		"output.txt")
 	cmd.Dir = solutionPath
 
 	outputBytes, err := cmd.Output()
 	if err != nil {
 		log.Printf("Error happened during running the executable: %v\n", err)
-		return err
+		return datacontract.Unknown, err
 	}
 
 	output := string(outputBytes)
@@ -103,6 +103,81 @@ func runProject(jobID int, solutionPath string, client *rpc.Client) error {
 	var reply datacontract.EmptyArgs
 	client.Call("CallbackContract.SendRunResult", runResultArgs, &reply)
 
+	return runResult, nil
+}
+
+func matchOutput(jobID int, solutionPath string, client *rpc.Client) error {
+	expectedOutput, err := os.Open(path.Join(solutionPath, "output_expected.txt"))
+	if err != nil {
+		log.Printf("Error happened during opening expected output file: %v\n", err)
+		return err
+	}
+	defer expectedOutput.Close()
+
+	output, err := os.Open(path.Join(solutionPath, "output.txt"))
+	if err != nil {
+		log.Printf("Error happened during opening output file: %v\n", err)
+		return err
+	}
+	defer output.Close()
+
+	resultArgs := &datacontract.OutputMatchResultArgs{
+		JobID:      jobID,
+		Mismatches: make([]datacontract.OutputMismatchLine, 0),
+	}
+
+	expectedOutputScanner := bufio.NewScanner(expectedOutput)
+	outputScanner := bufio.NewScanner(output)
+
+	lineNum := 0
+	for expectedOutputScanner.Scan() && outputScanner.Scan() {
+		expectedLine := expectedOutputScanner.Text()
+		line := outputScanner.Text()
+
+		if expectedLine != line {
+			mismatch := &datacontract.OutputMismatchLine{
+				LineNumber: lineNum,
+				Expected:   expectedLine,
+				Actual:     line,
+			}
+
+			resultArgs.Mismatches = append(resultArgs.Mismatches, *mismatch)
+		}
+
+		lineNum++
+	}
+
+	for expectedOutputScanner.Scan() {
+		expectedLine := expectedOutputScanner.Text()
+
+		mismatch := &datacontract.OutputMismatchLine{
+			LineNumber: lineNum,
+			Expected:   expectedLine,
+			Actual:     "",
+		}
+
+		resultArgs.Mismatches = append(resultArgs.Mismatches, *mismatch)
+
+		lineNum++
+	}
+
+	for outputScanner.Scan() {
+		line := outputScanner.Text()
+
+		mismatch := &datacontract.OutputMismatchLine{
+			LineNumber: lineNum,
+			Expected:   "",
+			Actual:     line,
+		}
+
+		resultArgs.Mismatches = append(resultArgs.Mismatches, *mismatch)
+
+		lineNum++
+	}
+
+	var reply datacontract.EmptyArgs
+	client.Call("CallbackContract.SendOutputMatchResult", resultArgs, &reply)
+
 	return nil
 }
 
@@ -115,6 +190,8 @@ func closeJob(jobID int, client *rpc.Client) {
 }
 
 func HandleJob(jobID int, doneWork chan bool) {
+	defer func() { doneWork <- true }()
+
 	/*jobStoragePath*/ _, solutionPath := createDirectoryForJob(jobID)
 	//defer os.RemoveAll(jobStoragePath)
 
@@ -123,20 +200,17 @@ func HandleJob(jobID int, doneWork chan bool) {
 		log.Printf("Error happened while dialing: %v\n", err)
 		return
 	}
+	defer closeJob(jobID, client)
 
 	err = buildProject(jobID, solutionPath, client)
 	if err != nil {
 		return
 	}
 
-	err = runProject(jobID, solutionPath, client)
-	if err != nil {
+	runResult, err := runProject(jobID, solutionPath, client)
+	if err != nil || runResult != datacontract.Success {
 		return
 	}
 
-	time.Sleep(time.Second * 10)
-
-	closeJob(jobID, client)
-
-	doneWork <- true
+	matchOutput(jobID, solutionPath, client)
 }

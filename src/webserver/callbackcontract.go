@@ -7,6 +7,14 @@ import (
 
 type CallbackContract bool
 
+func (c *CallbackContract) SendOutputMatchResult(args *datacontract.OutputMatchResultArgs, resp *datacontract.EmptyArgs) error {
+	eventBroker := GetSSEventBrokerInstance()
+
+	eventBroker.GetEventSource(args.JobID).messages <- fmt.Sprintf("The output has %v wrong lines.", len(args.Mismatches))
+
+	return nil
+}
+
 func (c *CallbackContract) SendRunResult(args *datacontract.RunResultArgs, resp *datacontract.EmptyArgs) error {
 	eventBroker := GetSSEventBrokerInstance()
 

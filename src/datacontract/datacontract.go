@@ -35,3 +35,14 @@ type RunResultArgs struct {
 	JobID  int
 	Result RunResult
 }
+
+type OutputMismatchLine struct {
+	LineNumber int
+	Expected   string
+	Actual     string
+}
+
+type OutputMatchResultArgs struct {
+	JobID      int
+	Mismatches []OutputMismatchLine
+}
