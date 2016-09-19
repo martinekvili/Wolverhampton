@@ -1,8 +1,9 @@
 package main
 
 import (
-	"datacontract"
 	"net/rpc"
+
+	"github.com/martinekvili/Wolverhampton/datacontract"
 )
 
 type Queue struct {

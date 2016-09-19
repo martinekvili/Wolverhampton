@@ -1,8 +1,9 @@
 package main
 
 import (
-	"datacontract"
 	"fmt"
+
+	"github.com/martinekvili/Wolverhampton/datacontract"
 )
 
 type CallbackContract bool

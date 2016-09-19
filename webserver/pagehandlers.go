@@ -1,7 +1,6 @@
 package main
 
 import (
-	"datacontract"
 	"fmt"
 	"html/template"
 	"io"
@@ -12,11 +11,13 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+
+	"github.com/martinekvili/Wolverhampton/datacontract"
 )
 
 // IndexPageHandler handles the index.html page
 func IndexPageHandler(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("../src/webserver/templates/index.html")
+	t, err := template.ParseFiles("templates/index.html")
 	if err != nil {
 		log.Fatal("Bad template for index.html")
 		return
@@ -99,7 +100,7 @@ func TestPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	if eventBroker.HasEventSource(sourceNum) {
 		// Read in the template with our SSE JavaScript code.
-		t, err := template.ParseFiles("../src/webserver/templates/testpage.html")
+		t, err := template.ParseFiles("templates/testpage.html")
 		if err != nil {
 			log.Fatal("Bad template for testpage.html")
 			return

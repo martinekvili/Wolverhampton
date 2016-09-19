@@ -2,10 +2,8 @@ package main
 
 import (
 	"bufio"
-	"datacontract"
 	"encoding/xml"
 	"fmt"
-	"gopkg.in/mgo.v2"
 	"io/ioutil"
 	"log"
 	"net/rpc"
@@ -14,6 +12,9 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/martinekvili/Wolverhampton/datacontract"
+	"gopkg.in/mgo.v2"
 )
 
 func createDirectoryForJob(jobID int) (jobStoragePath string, solutionPath string) {

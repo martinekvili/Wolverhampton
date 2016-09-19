@@ -1,10 +1,11 @@
 package main
 
 import (
-	"datacontract"
 	"log"
 	"net/rpc"
 	"sync"
+
+	"github.com/martinekvili/Wolverhampton/datacontract"
 )
 
 func when(expression bool, channel chan int) chan int {

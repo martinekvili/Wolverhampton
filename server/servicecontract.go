@@ -1,11 +1,12 @@
 package main
 
 import (
-	"datacontract"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 	"log"
 	"sync/atomic"
+
+	"github.com/martinekvili/Wolverhampton/datacontract"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var cntr int32 = 0
