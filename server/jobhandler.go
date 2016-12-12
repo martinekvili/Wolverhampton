@@ -31,7 +31,7 @@ func createDirectoryForJob(jobID int) (jobStoragePath string, solutionPath strin
 func buildProject(jobID int, solutionPath string, jobResult *datacontract.JobResult, client *rpc.Client) error {
 	cmd := exec.Command("C:\\Program Files (x86)\\MSBuild\\12.0\\Bin\\amd64\\MSBuild.exe",
 		"/noconsolelogger",
-		"/logger:E:\\GitHub\\Wolverhampton\\XmlLogger\\XmlLogger\\bin\\Debug\\XmlLogger.dll",
+		"/logger:D:\\Development\\Go\\bin\\XmlLogger.dll",
 		"TestSolution.sln")
 	cmd.Dir = solutionPath
 
@@ -215,14 +215,13 @@ func HandleJob(jobID int, doneWork chan bool) {
 		if err != nil {
 			log.Printf("Couldn't access database: %v\n", err)
 		}
+		defer session.Close()
 
 		c := session.DB("WolverhamptonDB").C("JobResult")
 		err = c.Insert(jobResult)
 		if err != nil {
 			log.Printf("Couldn't insert job result: %v\n", err)
 		}
-
-		session.Close()
 	}()
 
 	jobStoragePath, solutionPath := createDirectoryForJob(jobID)

@@ -61,7 +61,10 @@ func SubmitPageHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer file.Close()
 
-		f, err := os.Create(path.Join("uploads", strconv.Itoa(jobID)+filepath.Ext(handler.Filename)))
+		fileName := path.Join("uploads", strconv.Itoa(jobID)+filepath.Ext(handler.Filename))
+		os.MkdirAll(path.Dir(fileName), os.ModeDir)
+
+		f, err := os.Create(fileName)
 		if err != nil {
 			fmt.Println(err)
 			return

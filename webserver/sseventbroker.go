@@ -8,8 +8,8 @@ import (
 	"sync"
 )
 
-var instance *SSEventBroker
-var once sync.Once
+var sseventBrokerInstance *SSEventBroker
+var sseventBrokerOnce sync.Once
 
 // SSEventBroker handles the event sources
 type SSEventBroker struct {
@@ -19,13 +19,13 @@ type SSEventBroker struct {
 }
 
 func GetSSEventBrokerInstance() *SSEventBroker {
-	once.Do(func() {
-		instance = &SSEventBroker{
+	sseventBrokerOnce.Do(func() {
+		sseventBrokerInstance = &SSEventBroker{
 			eventSources: make(map[int]*SSEventSource),
 		}
 	})
 
-	return instance
+	return sseventBrokerInstance
 }
 
 // HasEventSource determines whether the broker has the specified event source.

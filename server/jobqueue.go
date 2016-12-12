@@ -42,17 +42,22 @@ func GetJobQueueInstance() *JobQueue {
 
 func (jq *JobQueue) Start() {
 	go func() {
-		client, err := rpc.DialHTTP("tcp", "localhost:1235")
-		if err != nil {
-			log.Printf("Error happened while dialing: %v\n", err)
-			return
-		}
+		var client *rpc.Client
 
 		jq.jobQueue.Start(client)
 
 		for {
 			select {
 			case item := <-jq.addItem:
+				if client == nil {
+					var err error
+					client, err = rpc.DialHTTP("tcp", "localhost:1235")
+					if err != nil {
+						log.Printf("Error happened while dialing: %v\n", err)
+						return
+					}
+				}
+
 				args := &datacontract.JobStatusArgs{
 					JobID:       item,
 					JobNumInRow: <-jq.jobQueue.getSize + 1,
