@@ -43,3 +43,11 @@ func (s *ServiceContract) GetJobResult(args *datacontract.GetJobResultArgs, resp
 
 	return nil
 }
+
+func (s *ServiceContract) LoginUser(args *datacontract.LoginCredentials, resp *datacontract.LoginResponse) error {
+	user, success := CheckPassword(args.UserName, args.Password)
+	resp.Success = success
+	resp.User = user
+
+	return nil
+}

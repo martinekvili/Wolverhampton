@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/rpc"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,8 +18,37 @@ import (
 	"github.com/martinekvili/Wolverhampton/datacontract"
 )
 
+func checkSession(w http.ResponseWriter, r *http.Request) bool {
+	cookie, err := r.Cookie("session")
+
+	if err == nil && cookie.Value != "" {
+		sessionID, err := url.QueryUnescape(cookie.Value)
+
+		if err == nil {
+			hasSession, _ := GetSessionHandlerInstance().GetUserType(sessionID)
+
+			if hasSession {
+				return true
+			}
+		}
+	}
+
+	t, err := template.ParseFiles("templates/login.html")
+	if err != nil {
+		log.Fatal("Bad template for login.html")
+		return false
+	}
+
+	t.Execute(w, nil)
+	return false
+}
+
 // IndexPageHandler handles the index.html page
 func IndexPageHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkSession(w, r) {
+		return
+	}
+
 	t, err := template.ParseFiles("templates/index.html")
 	if err != nil {
 		log.Fatal("Bad template for index.html")
@@ -24,6 +56,47 @@ func IndexPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t.Execute(w, nil)
+}
+
+// StaticFilesHandler handles the static file requests
+func StaticFilesHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, r.URL.Path[1:])
+}
+
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var credentials datacontract.LoginCredentials
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	if err != nil {
+		log.Print(err)
+	}
+	if err := r.Body.Close(); err != nil {
+		log.Print(err)
+	}
+	if err := json.Unmarshal(body, &credentials); err != nil {
+		log.Print(err)
+	}
+
+	client, err := rpc.DialHTTP("tcp", "localhost:1234")
+	if err != nil {
+		log.Printf("Error happened while dialing: %v\n", err)
+		return
+	}
+
+	var result datacontract.LoginResponse
+	err = client.Call("ServiceContract.LoginUser", credentials, &result)
+	if err != nil {
+		log.Printf("Error happened during remote procedure call: %v\n", err)
+		return
+	}
+
+	if !result.Success {
+		json.NewEncoder(w).Encode(false)
+	} else {
+		sessionID := GetSessionHandlerInstance().CreateSession(result.User.Name, result.User.UserType)
+		cookie := http.Cookie{Name: "session", Value: url.QueryEscape(sessionID), Path: "/", HttpOnly: true, MaxAge: 365 * 24 * 60 * 60}
+		http.SetCookie(w, &cookie)
+		json.NewEncoder(w).Encode(true)
+	}
 }
 
 // SubmitPageHandler handles the submits, and redirects the client to the test page

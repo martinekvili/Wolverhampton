@@ -29,6 +29,8 @@ func main() {
 	http.Handle("/events/", eventBroker)
 	http.Handle("/id/", http.HandlerFunc(TestPageHandler))
 	http.Handle("/submit/", http.HandlerFunc(SubmitPageHandler))
+	http.Handle("/stat/", http.HandlerFunc(StaticFilesHandler))
+	http.Handle("/login", http.HandlerFunc(LoginHandler))
 	http.Handle("/", http.HandlerFunc(IndexPageHandler))
 
 	// Start the server and listen forever on port 8000.

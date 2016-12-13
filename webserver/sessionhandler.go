@@ -96,3 +96,15 @@ func (h *SessionHandler) CollectGarbage() {
 
 	time.AfterFunc(time.Duration(1)*time.Hour, func() { h.CollectGarbage() })
 }
+
+func (h *SessionHandler) GetUserType(sessionID string) (hasSession bool, userType datacontract.UserType) {
+	h.syncObject.RLock()
+	defer h.syncObject.RUnlock()
+
+	session, ok := h.sessions[sessionID]
+	if !ok {
+		return false, 0
+	}
+
+	return true, session.UserType
+}

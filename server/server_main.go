@@ -8,6 +8,10 @@ import (
 )
 
 func main() {
+	if CreateAdminUser() {
+		log.Printf("Created admin user.")
+	}
+
 	jobQueue := GetJobQueueInstance()
 	jobQueue.Start()
 
