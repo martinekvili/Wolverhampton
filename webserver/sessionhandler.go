@@ -9,6 +9,27 @@ import (
 	"github.com/martinekvili/Wolverhampton/datacontract"
 )
 
+type SessionHandlerTimeProvider interface {
+	GetCurrentTime() time.Time
+	HasExpired(time.Time) bool
+	StartTimer(f func())
+}
+
+type SessionHandlerTimeProviderImpl struct {
+}
+
+func (i SessionHandlerTimeProviderImpl) GetCurrentTime() time.Time {
+	return time.Now()
+}
+
+func (i SessionHandlerTimeProviderImpl) HasExpired(t time.Time) bool {
+	return t.AddDate(1, 0, 0).Before(time.Now())
+}
+
+func (i SessionHandlerTimeProviderImpl) StartTimer(f func()) {
+	time.AfterFunc(time.Duration(1)*time.Hour, f)
+}
+
 type Session struct {
 	UserName string
 	UserType datacontract.UserType
@@ -24,12 +45,15 @@ type SessionHandler struct {
 	syncObject sync.RWMutex
 
 	sessions map[string]*Session
+
+	timeProvider SessionHandlerTimeProvider
 }
 
 func GetSessionHandlerInstance() *SessionHandler {
 	sessionHandlerOnce.Do(func() {
 		sessionHandlerInstance = &SessionHandler{
-			sessions: make(map[string]*Session),
+			sessions:     make(map[string]*Session),
+			timeProvider: &SessionHandlerTimeProviderImpl{},
 		}
 
 		go sessionHandlerInstance.CollectGarbage()
@@ -63,10 +87,10 @@ func (h *SessionHandler) CreateSession(userName string, userType datacontract.Us
 		h.sessions[sessionID] = &Session{
 			UserName:     userName,
 			UserType:     userType,
-			CreationTime: time.Now(),
+			CreationTime: h.timeProvider.GetCurrentTime(),
 		}
 	} else {
-		h.sessions[sessionID].CreationTime = time.Now()
+		h.sessions[sessionID].CreationTime = h.timeProvider.GetCurrentTime()
 	}
 
 	return sessionID
@@ -85,7 +109,7 @@ func (h *SessionHandler) CollectGarbage() {
 
 	var sessionsToDelete []string
 	for id, session := range h.sessions {
-		if session.CreationTime.AddDate(1, 0, 0).Before(time.Now()) {
+		if h.timeProvider.HasExpired(session.CreationTime) {
 			sessionsToDelete = append(sessionsToDelete, id)
 		}
 	}
@@ -94,7 +118,7 @@ func (h *SessionHandler) CollectGarbage() {
 		delete(h.sessions, id)
 	}
 
-	time.AfterFunc(time.Duration(1)*time.Hour, func() { h.CollectGarbage() })
+	h.timeProvider.StartTimer(func() { h.CollectGarbage() })
 }
 
 func (h *SessionHandler) GetUserType(sessionID string) (hasSession bool, userType datacontract.UserType) {
