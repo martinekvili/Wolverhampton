@@ -99,6 +99,42 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
+	client, err := rpc.DialHTTP("tcp", "localhost:1234")
+	if err != nil {
+		log.Printf("Error happened while dialing: %v\n", err)
+		return
+	}
+
+	var args datacontract.EmptyArgs
+	var result datacontract.UserList
+	err = client.Call("ServiceContract.ListUsers", args, &result)
+	if err != nil {
+		log.Printf("Error happened during remote procedure call: %v\n", err)
+		return
+	}
+
+	var users []UserViewModel
+	for _, u := range result.Users {
+		var userType string
+		if u.UserType == datacontract.Admin {
+			userType = "Admin"
+		} else if u.UserType == datacontract.Teacher {
+			userType = "Teacher"
+		} else {
+			userType = "Student"
+		}
+
+		users = append(users, UserViewModel{
+			UserName: u.Name,
+			FullName: u.FullName,
+			UserType: userType,
+		})
+	}
+
+	json.NewEncoder(w).Encode(users)
+}
+
 // SubmitPageHandler handles the submits, and redirects the client to the test page
 func SubmitPageHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Got in submit")

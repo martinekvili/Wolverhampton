@@ -11,6 +11,7 @@ const (
 type User struct {
 	ID           string `bson:"_id,omitempty"`
 	Name         string
+	FullName     string
 	UserType     UserType
 	PasswordSalt string
 	PasswordHash string
@@ -24,4 +25,8 @@ type LoginCredentials struct {
 type LoginResponse struct {
 	Success bool
 	User    User
+}
+
+type UserList struct {
+	Users []User
 }

@@ -51,3 +51,9 @@ func (s *ServiceContract) LoginUser(args *datacontract.LoginCredentials, resp *d
 
 	return nil
 }
+
+func (s *ServiceContract) ListUsers(args *datacontract.EmptyArgs, resp *datacontract.UserList) error {
+	resp.Users = ListUsers()
+
+	return nil
+}

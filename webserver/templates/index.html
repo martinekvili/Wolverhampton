@@ -1,12 +1,69 @@
+<!DOCTYPE html>
 <html>
-    <head>
-        <title>Index page</title>
-    </head>
-    <body>
-        <form action="submit/" method="post" enctype="multipart/form-data">
-            <input type="file" name="uploadedFile" />
-            <br />
-            <input type="submit" value="Start" />
-        </form>
-    </body>
+  <head>
+    <base href="/">
+    <title>Wolverhampton</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="stat/styles/bootstrap.min.css">
+    <link rel="stylesheet" href="stat/styles/metisMenu.min.css">
+    <link rel="stylesheet" href="stat/styles/font-awesome.min.css">
+    <link rel="stylesheet" href="stat/styles/main.css">
+    <link rel="stylesheet" href="stat/styles/sb-admin-2.css">
+
+    <!-- 1. Load libraries -->
+    <!-- IE required polyfill -->
+    <script src="https://unpkg.com/core-js/client/shim.min.js"></script>
+
+    <script src="https://unpkg.com/zone.js@0.7.2?main=browser"></script>
+    <script src="https://unpkg.com/reflect-metadata@0.1.8"></script>
+
+    <script src="https://unpkg.com/rxjs@5.0.0-rc.4/bundles/Rx.js"></script>
+    <script src="https://unpkg.com/@angular/core/bundles/core.umd.js"></script>
+    <script src="https://unpkg.com/@angular/common/bundles/common.umd.js"></script>
+    <script src="https://unpkg.com/@angular/compiler/bundles/compiler.umd.js"></script>
+    <script src="https://unpkg.com/@angular/platform-browser/bundles/platform-browser.umd.js"></script>
+    <script src="https://unpkg.com/@angular/platform-browser-dynamic/bundles/platform-browser-dynamic.umd.js"></script>
+    <script src="https://unpkg.com/@angular/router/bundles/router.umd.js"></script>
+    <script src="https://unpkg.com/@angular/http/bundles/http.umd.js"></script>
+
+    <!-- 2. Load our 'modules' -->
+    <script src='stat/mainApp/users/users.component.js'></script>
+    <script src='stat/mainApp/topnav/topnav.component.js'></script>
+    <script src='stat/mainApp/sidebar/sidebar.component.js'></script>
+    <script src='stat/mainApp/mainApp.component.js'></script>
+    <script src='stat/mainApp/mainApp.module.js'></script>
+    <script src='stat/mainApp/main.js'></script>
+
+  </head>
+
+  <!-- 3. Display the application -->
+  <body>
+    <main-app>
+        <div class="spinner">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
+        </div>
+    </main-app>
+
+    <!-- jQuery -->
+    <script src="stat/js/jquery.min.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="stat/js/bootstrap.min.js"></script>
+
+    <!-- Metis Menu Plugin JavaScript -->
+    <script src="stat/js/metisMenu.min.js"></script>
+
+    <!-- Custom Theme JavaScript -->
+    <script src="stat/js/sb-admin-2.min.js"></script>
+  </body>
+
 </html>
+
+
+<!-- 
+Copyright 2016 Google Inc. All Rights Reserved.
+Use of this source code is governed by an MIT-style license that
+can be found in the LICENSE file at http://angular.io/license
+-->

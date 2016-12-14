@@ -22,7 +22,7 @@ func findUserByName(users *mgo.Collection, userName string) (user datacontract.U
 	return user, true
 }
 
-func createUser(userName string, password string, userType datacontract.UserType) (user datacontract.User, err error) {
+func createUser(userName string, fullName string, password string, userType datacontract.UserType) (user datacontract.User, err error) {
 	saltBytes := make([]byte, 16)
 	if _, err := rand.Read(saltBytes); err != nil {
 		return user, err
@@ -35,6 +35,7 @@ func createUser(userName string, password string, userType datacontract.UserType
 
 	user = datacontract.User{
 		Name:         userName,
+		FullName:     fullName,
 		UserType:     userType,
 		PasswordSalt: base64.StdEncoding.EncodeToString(saltBytes),
 		PasswordHash: base64.StdEncoding.EncodeToString(passwordHash),
@@ -43,7 +44,7 @@ func createUser(userName string, password string, userType datacontract.UserType
 	return user, nil
 }
 
-func CreateUser(userName string, password string, userType datacontract.UserType) bool {
+func CreateUser(userName string, fullName string, password string, userType datacontract.UserType) bool {
 	session, err := mgo.Dial("localhost")
 	if err != nil {
 		log.Printf("Couldn't access database: %v\n", err)
@@ -58,7 +59,7 @@ func CreateUser(userName string, password string, userType datacontract.UserType
 		return false
 	}
 
-	user, err = createUser(userName, password, userType)
+	user, err = createUser(userName, fullName, password, userType)
 	if err != nil {
 		return false
 	}
@@ -88,7 +89,7 @@ func ChangePassword(userName string, password string) bool {
 	}
 
 	userID := user.ID
-	user, err = createUser(userName, password, user.UserType)
+	user, err = createUser(userName, user.FullName, password, user.UserType)
 	if err != nil {
 		return false
 	}
@@ -136,5 +137,19 @@ func CheckPassword(userName string, password string) (datacontract.User, bool) {
 }
 
 func CreateAdminUser() bool {
-	return CreateUser("admin", "password", datacontract.Admin)
+	return CreateUser("admin", "Administrator", "password", datacontract.Admin)
+}
+
+func ListUsers() (result []datacontract.User) {
+	session, err := mgo.Dial("localhost")
+	if err != nil {
+		log.Printf("Couldn't access database: %v\n", err)
+		return
+	}
+	defer session.Close()
+
+	users := session.DB("WolverhamptonDB").C("User")
+	users.Find(nil).All(&result)
+
+	return
 }

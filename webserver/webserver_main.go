@@ -26,6 +26,7 @@ func main() {
 	// Make a new Broker instance
 	eventBroker := GetSSEventBrokerInstance()
 
+	http.Handle("/api/users", http.HandlerFunc(ListUsersHandler))
 	http.Handle("/events/", eventBroker)
 	http.Handle("/id/", http.HandlerFunc(TestPageHandler))
 	http.Handle("/submit/", http.HandlerFunc(SubmitPageHandler))
